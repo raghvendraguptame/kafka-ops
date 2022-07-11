@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
 
+import static com.ops.kafka.config.Constants.STREAMS_INPUT_TOPIC;
 import static com.ops.kafka.config.Constants.TOPIC;
 
 public class NormalConsumer_2 {
@@ -18,7 +19,7 @@ public class NormalConsumer_2 {
     updatedProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "instance-2");
     try (KafkaConsumer<String, String> normalConsumer =
         new KafkaConsumer<>(updatedProps)) {
-      normalConsumer.subscribe(Collections.singleton(TOPIC));
+      normalConsumer.subscribe(Collections.singleton(STREAMS_INPUT_TOPIC));
       while (true) {
         ConsumerRecords<String, String> consumerRecords =
             normalConsumer.poll(Duration.ofMillis(1000));

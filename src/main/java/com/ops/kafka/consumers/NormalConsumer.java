@@ -12,12 +12,13 @@ import java.util.Collections;
 import java.util.Properties;
 
 public class NormalConsumer {
+
   public static void main(String[] args) {
     Properties updatedProps = KafkaConfigurations.getConsumerProperties();
     updatedProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "instance-1");
     try (KafkaConsumer<String, String> normalConsumer =
         new KafkaConsumer<>(updatedProps)) {
-      normalConsumer.subscribe(Collections.singleton(TOPIC));
+      normalConsumer.subscribe(Collections.singleton(STREAMS_OUTPUT_TOPIC));
       while (true) {
         ConsumerRecords<String, String> consumerRecords =
             normalConsumer.poll(Duration.ofMillis(1000));

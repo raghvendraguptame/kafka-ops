@@ -1,41 +1,49 @@
 package com.ops.kafka.streams;
 
 import com.ops.kafka.config.KafkaConfigurations;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Branched;
+import org.apache.kafka.streams.kstream.BranchedKStream;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Named;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import static com.ops.kafka.config.Constants.*;
 
-public class KafkaStreamsApp {
+public class KStreamBranchOp {
   public static void main(String[] args) {
     // Get the source stream.
     final StreamsBuilder builder = new StreamsBuilder();
 
     // Implement streams logic.
     final KStream<String, String> source = builder.stream(STREAMS_INPUT_TOPIC);
-    source
-        .flatMap(
-            (key, value) -> {
-              List<KeyValue<String, String>> result = new LinkedList<>();
-              System.out.println("----------- Original record -----------------");
-              System.out.println("Input Key : " + key);
-              System.out.println("Input Value : " + value);
-              String modifiedValue = value + "something";
-              result.add(new KeyValue<>(key, modifiedValue));
-              System.out.println("----------- Modified record -----------------");
-              System.out.println("Output Key : " + key);
-              System.out.println("Output Value : " + modifiedValue);
+    //        KStream<String,String>[] branches = source.branch(((key, value) ->
+    // Integer.getInteger(key) % 2==0));
+    //        KStream<String,String> evenKeysStream = branches[0];
 
-              return result;
+    Map<String, KStream<String, String>> branches =
+        source
+            .split(Named.as("branch-"))
+            .branch((key, value) -> key.equalsIgnoreCase("key1"))
+            .branch((key, value) -> key.equalsIgnoreCase("key2"))
+            .noDefaultBranch();
+
+    KStream<String, String> oddValueStream = branches.get("branch-1");
+    KStream<String, String> evenValueStream = branches.get("branch-2");
+
+      evenValueStream
+        .peek(
+            (key, value) -> {
+              System.out.println("Key : " + key);
+              System.out.println("Value : " + value);
             })
+        .merge(oddValueStream)
         .to(STREAMS_OUTPUT_TOPIC);
+
+    //        evenKeysStream.merge(oddKeysStream).to(STREAMS_OUTPUT_TOPIC);
 
     final Topology topology = builder.build();
     final KafkaStreams streams =
