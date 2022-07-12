@@ -13,8 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import static com.ops.kafka.config.Constants.STREAMS_INPUT_TOPIC;
-import static com.ops.kafka.config.Constants.STREAMS_OUTPUT_TOPIC;
+import static com.ops.kafka.config.Constants.*;
 
 public class KStreamsStatefulOps {
   public static void main(String[] args) {
@@ -24,22 +23,41 @@ public class KStreamsStatefulOps {
     final KStream<String, String> source = builder.stream(STREAMS_INPUT_TOPIC);
 
     KGroupedStream<String, String> groupedStream = source.groupByKey();
-    KTable<String, Integer> aggregate =
-        groupedStream.aggregate(
+    /* Aggregate the length of value for a specific key*/
+    groupedStream
+        .aggregate(
             () -> 0,
             (aggKey, newValue, aggValue) -> aggValue + newValue.length(),
-            Materialized.with(Serdes.String(), Serdes.Integer()));
-
-    aggregate
+            Materialized.with(Serdes.String(), Serdes.Integer()))
         .toStream()
         .peek(
             (key, value) -> {
               System.out.println("Key : " + key);
               System.out.println("Value : " + value);
             })
-        .to(STREAMS_OUTPUT_TOPIC, Produced.with(Serdes.String(), Serdes.Integer()));
+        .to(STREAMS_AGG_OUTPUT_TOPIC, Produced.with(Serdes.String(), Serdes.Integer()));
 
-    //        evenKeysStream.merge(oddKeysStream).to(STREAMS_OUTPUT_TOPIC);
+    /* Count the number of msg in the topic for a specific key*/
+    groupedStream
+        .count(Materialized.with(Serdes.String(), Serdes.Long()))
+        .toStream()
+        .peek(
+            (key, value) -> {
+              System.out.println("Key : " + key);
+              System.out.println("Value : " + value);
+            })
+        .to(STREAMS_COUNT_OUTPUT_TOPIC, Produced.with(Serdes.String(), Serdes.Long()));
+
+    /* Reduce, combines the msg for a specific key*/
+    groupedStream
+        .reduce((aggValue, newValue) -> aggValue + " + " +newValue)
+        .toStream()
+        .peek(
+            (key, value) -> {
+              System.out.println("Key : " + key);
+              System.out.println("Value : " + value);
+            })
+        .to(STREAMS_REDUCE_OUTPUT_TOPIC);
 
     final Topology topology = builder.build();
     final KafkaStreams streams =

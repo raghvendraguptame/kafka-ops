@@ -5,20 +5,25 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import static com.ops.kafka.config.Constants.*;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
-public class NormalConsumer {
+import static com.ops.kafka.config.Constants.STREAMS_OUTER_JOIN_TOPIC;
 
+public class Consumer_3 {
   public static void main(String[] args) {
     Properties updatedProps = KafkaConfigurations.getConsumerProperties();
-    updatedProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "instance-1");
+    updatedProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "instance-3");
     try (KafkaConsumer<String, String> normalConsumer =
         new KafkaConsumer<>(updatedProps)) {
-      normalConsumer.subscribe(Collections.singleton(STREAMS_OUTPUT_TOPIC));
+      List<String> topicList = new ArrayList<>();
+      topicList.add("consumer-assign-test-2");
+      topicList.add("consumer-assign-test-3");
+      normalConsumer.subscribe(topicList);
       while (true) {
         ConsumerRecords<String, String> consumerRecords =
             normalConsumer.poll(Duration.ofMillis(1000));

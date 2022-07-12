@@ -5,29 +5,29 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
-import static com.ops.kafka.config.Constants.STREAMS_OUTPUT_TOPIC;
+import static com.ops.kafka.config.Constants.STREAMS_OUTER_JOIN_TOPIC;
 
-public class SerdesConsumer {
-
-
+public class Consumer_2 {
   public static void main(String[] args) {
     Properties updatedProps = KafkaConfigurations.getConsumerProperties();
-    updatedProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class);
-    try (KafkaConsumer<String, Integer> normalConsumer =
+    updatedProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "instance-2");
+    try (KafkaConsumer<String, String> normalConsumer =
         new KafkaConsumer<>(updatedProps)) {
-      normalConsumer.subscribe(Collections.singleton(STREAMS_OUTPUT_TOPIC));
+      List<String> topicList = new ArrayList<>();
+      topicList.add("consumer-assign-test-2");
+      topicList.add("consumer-assign-test-3");
+      normalConsumer.subscribe(topicList);
       while (true) {
-        ConsumerRecords<String, Integer> consumerRecords =
+        ConsumerRecords<String, String> consumerRecords =
             normalConsumer.poll(Duration.ofMillis(1000));
-        for (ConsumerRecord<String, Integer> record : consumerRecords) {
+        for (ConsumerRecord<String, String> record : consumerRecords) {
           System.out.println(record.key() +" : "+record.value());
         }
       }
